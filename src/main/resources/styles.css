@@ -1,0 +1,345 @@
+/* Smart Recruitment Platform Styles */
+
+.root {
+    -fx-font-family: "Segoe UI", "Arial", sans-serif;
+    -fx-font-size: 12px;
+    -fx-background-color: #f8f9fa;
+}
+
+/* Header Styles */
+.header {
+    -fx-background-color: linear-gradient(to right, #2c3e50, #34495e);
+    -fx-text-fill: white;
+    -fx-padding: 20px;
+}
+
+.header .label {
+    -fx-text-fill: white;
+}
+
+/* Tab Pane Styles */
+.tab-pane {
+    -fx-tab-min-width: 120px;
+    -fx-tab-max-width: 120px;
+}
+
+.tab-pane .tab-header-area .tab-header-background {
+    -fx-background-color: #ecf0f1;
+}
+
+.tab-pane .tab {
+    -fx-background-color: #bdc3c7;
+    -fx-background-radius: 5px 5px 0 0;
+    -fx-border-color: #95a5a6;
+    -fx-border-width: 1px 1px 0 1px;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: #3498db;
+}
+
+.tab-pane .tab .tab-label {
+    -fx-text-fill: #2c3e50;
+    -fx-font-weight: bold;
+}
+
+.tab-pane .tab:selected .tab-label {
+    -fx-text-fill: white;
+}
+
+/* Button Styles */
+.button {
+    -fx-background-color: #3498db;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+    -fx-padding: 8px 16px;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #2980b9;
+}
+
+.button:pressed {
+    -fx-background-color: #21618c;
+}
+
+/* Primary Button */
+.button.primary {
+    -fx-background-color: #2ecc71;
+}
+
+.button.primary:hover {
+    -fx-background-color: #27ae60;
+}
+
+/* Secondary Button */
+.button.secondary {
+    -fx-background-color: #95a5a6;
+}
+
+.button.secondary:hover {
+    -fx-background-color: #7f8c8d;
+}
+
+/* Danger Button */
+.button.danger {
+    -fx-background-color: #e74c3c;
+}
+
+.button.danger:hover {
+    -fx-background-color: #c0392b;
+}
+
+/* Table Styles */
+.table-view {
+    -fx-background-color: white;
+    -fx-border-color: #bdc3c7;
+    -fx-border-width: 1px;
+    -fx-border-radius: 5px;
+}
+
+.table-view .column-header {
+    -fx-background-color: #34495e;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-padding: 10px;
+}
+
+.table-view .column-header .label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+.table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: #ecf0f1;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #f8f9fa;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #3498db;
+    -fx-text-fill: white;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: #e8f4fd;
+}
+
+.table-cell {
+    -fx-padding: 8px;
+    -fx-alignment: center-left;
+}
+
+/* Text Field Styles */
+.text-field, .text-area {
+    -fx-background-color: white;
+    -fx-border-color: #bdc3c7;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+    -fx-padding: 8px;
+}
+
+.text-field:focused, .text-area:focused {
+    -fx-border-color: #3498db;
+    -fx-border-width: 2px;
+}
+
+/* ComboBox Styles */
+.combo-box {
+    -fx-background-color: white;
+    -fx-border-color: #bdc3c7;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+}
+
+.combo-box:focused {
+    -fx-border-color: #3498db;
+    -fx-border-width: 2px;
+}
+
+/* Spinner Styles */
+.spinner {
+    -fx-background-color: white;
+    -fx-border-color: #bdc3c7;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+}
+
+/* CheckBox Styles */
+.check-box {
+    -fx-text-fill: #2c3e50;
+}
+
+.check-box .box {
+    -fx-background-color: white;
+    -fx-border-color: #bdc3c7;
+    -fx-border-width: 1px;
+    -fx-border-radius: 3px;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: #3498db;
+}
+
+/* Label Styles */
+.label {
+    -fx-text-fill: #2c3e50;
+}
+
+.label.title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+}
+
+.label.subtitle {
+    -fx-font-size: 14px;
+    -fx-text-fill: #7f8c8d;
+}
+
+/* Statistics Card Styles */
+.stats-card {
+    -fx-background-color: white;
+    -fx-background-radius: 10px;
+    -fx-border-color: #ecf0f1;
+    -fx-border-width: 1px;
+    -fx-border-radius: 10px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 5, 0, 0, 2);
+    -fx-padding: 20px;
+}
+
+.stats-card .label {
+    -fx-text-fill: white;
+}
+
+/* Dialog Styles */
+.dialog-pane {
+    -fx-background-color: white;
+}
+
+.dialog-pane .header-panel {
+    -fx-background-color: #34495e;
+}
+
+.dialog-pane .header-panel .label {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+/* Toolbar Styles */
+.tool-bar {
+    -fx-background-color: #ecf0f1;
+    -fx-border-color: #bdc3c7;
+    -fx-border-width: 0 0 1px 0;
+    -fx-padding: 10px;
+}
+
+/* Status Bar Styles */
+.status-bar {
+    -fx-background-color: #ecf0f1;
+    -fx-border-color: #bdc3c7;
+    -fx-border-width: 1px 0 0 0;
+    -fx-padding: 5px 10px;
+}
+
+/* Separator Styles */
+.separator {
+    -fx-background-color: #bdc3c7;
+}
+
+/* Progress Indicator Styles */
+.progress-indicator {
+    -fx-progress-color: #3498db;
+}
+
+/* Scroll Bar Styles */
+.scroll-bar {
+    -fx-background-color: #ecf0f1;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #bdc3c7;
+    -fx-background-radius: 5px;
+}
+
+.scroll-bar .thumb:hover {
+    -fx-background-color: #95a5a6;
+}
+
+/* Menu Styles */
+.menu-bar {
+    -fx-background-color: #34495e;
+}
+
+.menu-bar .label {
+    -fx-text-fill: white;
+}
+
+.context-menu {
+    -fx-background-color: white;
+    -fx-border-color: #bdc3c7;
+    -fx-border-width: 1px;
+}
+
+/* Tooltip Styles */
+.tooltip {
+    -fx-background-color: #2c3e50;
+    -fx-text-fill: white;
+    -fx-background-radius: 5px;
+    -fx-font-size: 11px;
+}
+
+/* Match Score Color Coding */
+.match-excellent {
+    -fx-background-color: #d5f4e6;
+    -fx-text-fill: #27ae60;
+}
+
+.match-good {
+    -fx-background-color: #fff3cd;
+    -fx-text-fill: #f39c12;
+}
+
+.match-fair {
+    -fx-background-color: #f8d7da;
+    -fx-text-fill: #e74c3c;
+}
+
+.match-poor {
+    -fx-background-color: #d1ecf1;
+    -fx-text-fill: #17a2b8;
+}
+
+/* Animation Classes */
+.fade-in {
+    -fx-opacity: 0;
+}
+
+.slide-in {
+    -fx-translate-x: -100;
+}
+
+/* Responsive Design */
+@media (max-width: 800px) {
+    .tab-pane .tab {
+        -fx-tab-min-width: 80px;
+        -fx-tab-max-width: 80px;
+    }
+    
+    .button {
+        -fx-padding: 6px 12px;
+        -fx-font-size: 11px;
+    }
+    
+    .table-cell {
+        -fx-padding: 6px;
+        -fx-font-size: 11px;
+    }
+}
