@@ -1,4 +1,5 @@
 package com.recruitment.ui;
+import javafx.util.StringConverter;
 
 import com.recruitment.database.CandidateDAO;
 import com.recruitment.database.JobPostingDAO;

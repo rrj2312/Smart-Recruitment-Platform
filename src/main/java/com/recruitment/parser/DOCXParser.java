@@ -186,13 +186,13 @@ public class DOCXParser {
                     if (underlying.getApplication() != null) {
                         metadata.append("Application: ").append(underlying.getApplication()).append("\n");
                     }
-                    if (underlying.getPages() != null) {
+                    if (underlying.getPages() > 0) {
                         metadata.append("Pages: ").append(underlying.getPages()).append("\n");
                     }
-                    if (underlying.getWords() != null) {
+                    if (underlying.getWords() > 0) {
                         metadata.append("Words: ").append(underlying.getWords()).append("\n");
                     }
-                    if (underlying.getCharacters() != null) {
+                    if (underlying.getCharacters() > 0) {
                         metadata.append("Characters: ").append(underlying.getCharacters()).append("\n");
                     }
                 }
