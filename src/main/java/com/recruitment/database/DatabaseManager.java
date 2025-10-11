@@ -9,18 +9,17 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-/**
- * Database manager for SQLite database operations
- */
 public class DatabaseManager {
-    private static final String DATABASE_NAME = "recruitment.db";
-    private static final String DATABASE_URL = "jdbc:sqlite:" + DATABASE_NAME;
+    private static final String DATABASE_NAME = "smart_recruitment";
+    private static final String DATABASE_URL = "jdbc:mysql://localhost:3306/" + DATABASE_NAME + "?useSSL=false&serverTimezone=UTC";
+    private static final String DB_USER = "root";
+    private static final String DB_PASSWORD = "root123";
     private static DatabaseManager instance;
-    
+
     private DatabaseManager() {
         // Private constructor for singleton
     }
-    
+
     /**
      * Get singleton instance
      */
@@ -30,41 +29,28 @@ public class DatabaseManager {
         }
         return instance;
     }
-    
+
     /**
      * Get database connection
      */
     public Connection getConnection() throws SQLException {
         try {
-            // Load SQLite JDBC driver
-            Class.forName("org.sqlite.JDBC");
-            
-            Connection connection = DriverManager.getConnection(DATABASE_URL);
-            
-            // Enable foreign key constraints
-            try (Statement stmt = connection.createStatement()) {
-                stmt.execute("PRAGMA foreign_keys = ON");
-            }
-            
-            return connection;
-            
+            // Load MySQL JDBC driver
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            return DriverManager.getConnection(DATABASE_URL, DB_USER, DB_PASSWORD);
         } catch (ClassNotFoundException e) {
-            throw new SQLException("SQLite JDBC driver not found", e);
+            throw new SQLException("MySQL JDBC driver not found", e);
         }
     }
-    
+
     /**
      * Initialize database with schema
      */
     public void initializeDatabase() throws SQLException {
         try (Connection connection = getConnection()) {
-            // Read and execute schema SQL
             String schemaSQL = loadSchemaSQL();
-            
             try (Statement statement = connection.createStatement()) {
-                // Split SQL statements and execute them
                 String[] statements = schemaSQL.split(";");
-                
                 for (String sql : statements) {
                     sql = sql.trim();
                     if (!sql.isEmpty() && !sql.startsWith("--")) {
@@ -73,118 +59,134 @@ public class DatabaseManager {
                 }
             }
             
-            System.out.println("Database initialized successfully");
+            // Create indexes safely
+            createIndexesSafely(connection);
             
+            System.out.println("Database initialized successfully");
         } catch (IOException e) {
             throw new SQLException("Failed to load database schema", e);
         }
     }
     
     /**
-     * Load schema SQL from resources
+     * Create database indexes safely (ignore if they already exist)
+     */
+    private void createIndexesSafely(Connection connection) {
+        String[] indexes = {
+            "CREATE INDEX idx_candidates_email ON candidates(email)",
+            "CREATE INDEX idx_candidates_experience ON candidates(experience_years)",
+            "CREATE INDEX idx_candidate_skills_skill ON candidate_skills(skill)",
+            "CREATE INDEX idx_job_postings_status ON job_postings(status)",
+            "CREATE INDEX idx_job_skills_skill ON job_skills(skill)",
+            "CREATE INDEX idx_match_results_score ON match_results(match_score)"
+        };
+        
+        try (Statement statement = connection.createStatement()) {
+            for (String indexSQL : indexes) {
+                try {
+                    statement.execute(indexSQL);
+                } catch (SQLException e) {
+                    // Ignore duplicate index errors
+                    if (!e.getMessage().contains("Duplicate key name")) {
+                        System.err.println("Warning: Failed to create index: " + e.getMessage());
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Warning: Failed to create some indexes: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Load schema SQL from resources or file
      */
     private String loadSchemaSQL() throws IOException {
-        try {
-            // Try to load from resources first
-            var inputStream = getClass().getClassLoader().getResourceAsStream("database/schema.sql");
-            if (inputStream != null) {
-                return new String(inputStream.readAllBytes());
-            }
-        } catch (Exception e) {
-            // Fall back to file system
+        // Load from resources first
+        var inputStream = getClass().getClassLoader().getResourceAsStream("database/schema.sql");
+        if (inputStream != null) {
+            return new String(inputStream.readAllBytes());
         }
-        
-        // Try to load from file system
+
+        // Fallback to filesystem
         Path schemaPath = Paths.get("src/main/resources/database/schema.sql");
         if (Files.exists(schemaPath)) {
             return Files.readString(schemaPath);
         }
-        
-        // If schema file not found, return default schema
+
+        // Return default MySQL schema
         return getDefaultSchema();
     }
-    
+
     /**
-     * Get default database schema
+     * Default MySQL database schema
      */
     private String getDefaultSchema() {
         return """
-            -- Smart Recruitment Platform Database Schema
-            
             -- Candidates table
             CREATE TABLE IF NOT EXISTS candidates (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                email TEXT UNIQUE NOT NULL,
-                phone TEXT,
-                education TEXT,
-                experience_years INTEGER DEFAULT 0,
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                phone VARCHAR(50),
+                education VARCHAR(255),
+                experience_years INT DEFAULT 0,
                 resume_text TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             );
-            
+
             -- Job postings table
             CREATE TABLE IF NOT EXISTS job_postings (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
                 description TEXT,
-                location TEXT,
+                location VARCHAR(255),
                 salary_min DECIMAL(10,2),
                 salary_max DECIMAL(10,2),
-                required_experience INTEGER DEFAULT 0,
+                required_experience INT DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                is_active BOOLEAN DEFAULT 1
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                is_active TINYINT(1) DEFAULT 1
             );
-            
-            -- Candidate skills table (many-to-many)
+
+            -- Candidate skills table
             CREATE TABLE IF NOT EXISTS candidate_skills (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                candidate_id INTEGER NOT NULL,
-                skill_name TEXT NOT NULL,
-                proficiency_level TEXT DEFAULT 'Intermediate',
-                FOREIGN KEY (candidate_id) REFERENCES candidates(id) ON DELETE CASCADE,
-                UNIQUE(candidate_id, skill_name)
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                candidate_id INT NOT NULL,
+                skill_name VARCHAR(255) NOT NULL,
+                proficiency_level VARCHAR(50) DEFAULT 'Intermediate',
+                UNIQUE(candidate_id, skill_name),
+                FOREIGN KEY (candidate_id) REFERENCES candidates(id) ON DELETE CASCADE
             );
-            
-            -- Job required skills table (many-to-many)
+
+            -- Job required skills table
             CREATE TABLE IF NOT EXISTS job_skills (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                job_id INTEGER NOT NULL,
-                skill_name TEXT NOT NULL,
-                importance_level TEXT DEFAULT 'Required',
-                FOREIGN KEY (job_id) REFERENCES job_postings(id) ON DELETE CASCADE,
-                UNIQUE(job_id, skill_name)
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                job_id INT NOT NULL,
+                skill_name VARCHAR(255) NOT NULL,
+                importance_level VARCHAR(50) DEFAULT 'Required',
+                UNIQUE(job_id, skill_name),
+                FOREIGN KEY (job_id) REFERENCES job_postings(id) ON DELETE CASCADE
             );
-            
-            -- Match results table (for caching match scores)
+
+            -- Match results table
             CREATE TABLE IF NOT EXISTS match_results (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                candidate_id INTEGER NOT NULL,
-                job_id INTEGER NOT NULL,
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                candidate_id INT NOT NULL,
+                job_id INT NOT NULL,
                 match_score DECIMAL(5,2) NOT NULL,
-                skill_match_count INTEGER DEFAULT 0,
-                total_skills INTEGER DEFAULT 0,
-                experience_match BOOLEAN DEFAULT 0,
+                skill_match_count INT DEFAULT 0,
+                total_skills INT DEFAULT 0,
+                experience_match TINYINT(1) DEFAULT 0,
                 calculated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(candidate_id, job_id),
                 FOREIGN KEY (candidate_id) REFERENCES candidates(id) ON DELETE CASCADE,
-                FOREIGN KEY (job_id) REFERENCES job_postings(id) ON DELETE CASCADE,
-                UNIQUE(candidate_id, job_id)
+                FOREIGN KEY (job_id) REFERENCES job_postings(id) ON DELETE CASCADE
             );
-            
-            -- Indexes for better performance
-            CREATE INDEX IF NOT EXISTS idx_candidates_email ON candidates(email);
-            CREATE INDEX IF NOT EXISTS idx_candidates_experience ON candidates(experience_years);
-            CREATE INDEX IF NOT EXISTS idx_job_postings_active ON job_postings(is_active);
-            CREATE INDEX IF NOT EXISTS idx_candidate_skills_candidate ON candidate_skills(candidate_id);
-            CREATE INDEX IF NOT EXISTS idx_candidate_skills_skill ON candidate_skills(skill_name);
-            CREATE INDEX IF NOT EXISTS idx_job_skills_job ON job_skills(job_id);
-            CREATE INDEX IF NOT EXISTS idx_job_skills_skill ON job_skills(skill_name);
-            CREATE INDEX IF NOT EXISTS idx_match_results_score ON match_results(match_score DESC);
-            """;
+
+        """;
     }
-    
+
     /**
      * Test database connection
      */
@@ -196,42 +198,14 @@ public class DatabaseManager {
             return false;
         }
     }
-    
-    /**
-     * Get database file path
-     */
-    public String getDatabasePath() {
-        return DATABASE_NAME;
-    }
-    
-    /**
-     * Check if database exists
-     */
-    public boolean databaseExists() {
-        return Files.exists(Paths.get(DATABASE_NAME));
-    }
-    
-    /**
-     * Get database size in bytes
-     */
-    public long getDatabaseSize() {
-        try {
-            Path dbPath = Paths.get(DATABASE_NAME);
-            return Files.exists(dbPath) ? Files.size(dbPath) : 0;
-        } catch (IOException e) {
-            return 0;
-        }
-    }
-    
+
     /**
      * Execute SQL script
      */
     public void executeScript(String sql) throws SQLException {
         try (Connection connection = getConnection();
              Statement statement = connection.createStatement()) {
-            
             String[] statements = sql.split(";");
-            
             for (String sqlStatement : statements) {
                 sqlStatement = sqlStatement.trim();
                 if (!sqlStatement.isEmpty() && !sqlStatement.startsWith("--")) {
@@ -240,12 +214,11 @@ public class DatabaseManager {
             }
         }
     }
-    
+
     /**
-     * Close all connections and cleanup
+     * Shutdown / cleanup (optional)
      */
     public void shutdown() {
-        // SQLite doesn't require explicit shutdown, but we can perform cleanup here
         System.out.println("Database manager shutdown completed");
     }
 }

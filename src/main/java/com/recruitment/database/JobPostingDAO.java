@@ -27,7 +27,7 @@ public class JobPostingDAO {
         
         String sql = """
             INSERT INTO job_postings (title, description, location, salary_min, salary_max, 
-                                    required_experience, created_at, updated_at, is_active)
+                                    required_experience, created_at, updated_at, status)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """;
         
@@ -53,7 +53,7 @@ public class JobPostingDAO {
             statement.setInt(6, jobPosting.getRequiredExperience());
             statement.setTimestamp(7, Timestamp.valueOf(jobPosting.getCreatedAt()));
             statement.setTimestamp(8, Timestamp.valueOf(jobPosting.getUpdatedAt()));
-            statement.setBoolean(9, jobPosting.isActive());
+            statement.setString(9, jobPosting.isActive() ? "Active" : "Closed");
             
             int affectedRows = statement.executeUpdate();
             
@@ -89,7 +89,7 @@ public class JobPostingDAO {
         String sql = """
             UPDATE job_postings 
             SET title = ?, description = ?, location = ?, salary_min = ?, salary_max = ?, 
-                required_experience = ?, updated_at = ?, is_active = ?
+                required_experience = ?, updated_at = ?, status = ?
             WHERE id = ?
             """;
         
@@ -114,7 +114,7 @@ public class JobPostingDAO {
             
             statement.setInt(6, jobPosting.getRequiredExperience());
             statement.setTimestamp(7, Timestamp.valueOf(LocalDateTime.now()));
-            statement.setBoolean(8, jobPosting.isActive());
+            statement.setString(8, jobPosting.isActive() ? "Active" : "Closed");
             statement.setLong(9, jobPosting.getId());
             
             int affectedRows = statement.executeUpdate();
@@ -140,7 +140,7 @@ public class JobPostingDAO {
         
         String sql = """
             SELECT id, title, description, location, salary_min, salary_max, required_experience,
-                   created_at, updated_at, is_active
+                   created_at, updated_at, status
             FROM job_postings WHERE id = ?
             """;
         
@@ -167,7 +167,7 @@ public class JobPostingDAO {
     public List<JobPosting> findAll() throws SQLException {
         String sql = """
             SELECT id, title, description, location, salary_min, salary_max, required_experience,
-                   created_at, updated_at, is_active
+                   created_at, updated_at, status
             FROM job_postings ORDER BY created_at DESC
             """;
         
@@ -193,8 +193,8 @@ public class JobPostingDAO {
     public List<JobPosting> findActive() throws SQLException {
         String sql = """
             SELECT id, title, description, location, salary_min, salary_max, required_experience,
-                   created_at, updated_at, is_active
-            FROM job_postings WHERE is_active = 1 ORDER BY created_at DESC
+                   created_at, updated_at, status
+            FROM job_postings WHERE status = 'Active' ORDER BY created_at DESC
             """;
         
         List<JobPosting> jobPostings = new ArrayList<>();
@@ -223,9 +223,9 @@ public class JobPostingDAO {
         
         String sql = """
             SELECT id, title, description, location, salary_min, salary_max, required_experience,
-                   created_at, updated_at, is_active
+                   created_at, updated_at, status
             FROM job_postings 
-            WHERE LOWER(location) LIKE LOWER(?) AND is_active = 1
+            WHERE LOWER(location) LIKE LOWER(?) AND status = 'Active'
             ORDER BY created_at DESC
             """;
         
@@ -259,10 +259,10 @@ public class JobPostingDAO {
         
         String sql = """
             SELECT DISTINCT j.id, j.title, j.description, j.location, j.salary_min, j.salary_max, 
-                   j.required_experience, j.created_at, j.updated_at, j.is_active
+                   j.required_experience, j.created_at, j.updated_at, j.status
             FROM job_postings j
-            JOIN job_skills js ON j.id = js.job_id
-            WHERE LOWER(js.skill_name) = LOWER(?) AND j.is_active = 1
+            JOIN job_skills js ON j.id = js.job_posting_id
+            WHERE LOWER(js.skill) = LOWER(?) AND j.status = 'Active'
             ORDER BY j.created_at DESC
             """;
         
@@ -291,9 +291,9 @@ public class JobPostingDAO {
     public List<JobPosting> findBySalaryRange(BigDecimal minSalary, BigDecimal maxSalary) throws SQLException {
         String sql = """
             SELECT id, title, description, location, salary_min, salary_max, required_experience,
-                   created_at, updated_at, is_active
+                   created_at, updated_at, status
             FROM job_postings 
-            WHERE is_active = 1 AND (
+            WHERE status = 'Active' AND (
                 (salary_min IS NOT NULL AND salary_min >= ?) OR
                 (salary_max IS NOT NULL AND salary_max <= ?)
             )
@@ -330,9 +330,9 @@ public class JobPostingDAO {
         
         String sql = """
             SELECT id, title, description, location, salary_min, salary_max, required_experience,
-                   created_at, updated_at, is_active
+                   created_at, updated_at, status
             FROM job_postings 
-            WHERE (LOWER(title) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?)) AND is_active = 1
+            WHERE (LOWER(title) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?)) AND status = 'Active'
             ORDER BY created_at DESC
             """;
         
@@ -365,7 +365,7 @@ public class JobPostingDAO {
             throw new IllegalArgumentException("Job posting ID cannot be null");
         }
         
-        String sql = "UPDATE job_postings SET is_active = 0, updated_at = ? WHERE id = ?";
+        String sql = "UPDATE job_postings SET status = 'Closed', updated_at = ? WHERE id = ?";
         
         try (Connection connection = dbManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -389,7 +389,7 @@ public class JobPostingDAO {
             throw new IllegalArgumentException("Job posting ID cannot be null");
         }
         
-        String sql = "UPDATE job_postings SET is_active = 1, updated_at = ? WHERE id = ?";
+        String sql = "UPDATE job_postings SET status = 'Active', updated_at = ? WHERE id = ?";
         
         try (Connection connection = dbManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -447,7 +447,7 @@ public class JobPostingDAO {
      * Get count of active job postings
      */
     public int getActiveCount() throws SQLException {
-        String sql = "SELECT COUNT(*) FROM job_postings WHERE is_active = 1";
+        String sql = "SELECT COUNT(*) FROM job_postings WHERE status = 'Active'";
         
         try (Connection connection = dbManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql);
@@ -483,7 +483,7 @@ public class JobPostingDAO {
             return;
         }
         
-        String sql = "INSERT INTO job_skills (job_id, skill_name, importance_level) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO job_skills (job_posting_id, skill, importance) VALUES (?, ?, ?)";
         
         try (Connection connection = dbManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -505,7 +505,7 @@ public class JobPostingDAO {
      * Delete all skills for job posting
      */
     private void deleteSkills(Long jobId) throws SQLException {
-        String sql = "DELETE FROM job_skills WHERE job_id = ?";
+        String sql = "DELETE FROM job_skills WHERE job_posting_id = ?";
         
         try (Connection connection = dbManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -520,10 +520,10 @@ public class JobPostingDAO {
      */
     private void loadSkills(JobPosting jobPosting) throws SQLException {
         String sql = """
-            SELECT skill_name, importance_level 
+            SELECT skill, importance 
             FROM job_skills 
-            WHERE job_id = ? 
-            ORDER BY importance_level, skill_name
+            WHERE job_posting_id = ? 
+            ORDER BY importance, skill
             """;
         
         List<String> requiredSkills = new ArrayList<>();
@@ -536,8 +536,8 @@ public class JobPostingDAO {
             
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    String skillName = resultSet.getString("skill_name");
-                    String importanceLevel = resultSet.getString("importance_level");
+                    String skillName = resultSet.getString("skill");
+                    String importanceLevel = resultSet.getString("importance");
                     
                     if ("Required".equals(importanceLevel)) {
                         requiredSkills.add(skillName);
@@ -574,7 +574,8 @@ public class JobPostingDAO {
         }
         
         jobPosting.setRequiredExperience(resultSet.getInt("required_experience"));
-        jobPosting.setActive(resultSet.getBoolean("is_active"));
+        String status = resultSet.getString("status");
+        jobPosting.setActive("Active".equals(status));
         
         Timestamp createdAt = resultSet.getTimestamp("created_at");
         if (createdAt != null) {

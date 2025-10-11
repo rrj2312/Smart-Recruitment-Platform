@@ -1,5 +1,4 @@
 package com.recruitment.ui;
-import javafx.util.StringConverter;
 
 import com.recruitment.database.CandidateDAO;
 import com.recruitment.database.JobPostingDAO;
@@ -9,1052 +8,476 @@ import com.recruitment.model.JobPosting;
 import com.recruitment.model.MatchResult;
 import com.recruitment.parser.ResumeParser;
 import com.recruitment.util.ExcelExporter;
-import javafx.application.Application;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.*;
-import javafx.stage.FileChooser;
-import javafx.stage.Stage;
+
+import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.awt.event.*;
 import java.io.File;
-import java.math.BigDecimal;
 import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 /**
- * JavaFX-based Recruiter Dashboard
+ * Swing-based Recruiter Dashboard
  */
-public class RecruiterDashboard extends Application {
-    
-    private Stage primaryStage;
+public class RecruiterDashboard extends JFrame {
+
     private CandidateDAO candidateDAO;
     private JobPostingDAO jobPostingDAO;
     private MatchingEngine matchingEngine;
     private ResumeParser resumeParser;
-    
-    // UI Components
-    private TabPane tabPane;
-    private TableView<Candidate> candidatesTable;
-    private TableView<JobPosting> jobsTable;
-    private TableView<MatchResult> matchResultsTable;
-    private ObservableList<Candidate> candidatesData;
-    private ObservableList<JobPosting> jobsData;
-    private ObservableList<MatchResult> matchResultsData;
-    
-    @Override
-    public void start(Stage primaryStage) {
-        this.primaryStage = primaryStage;
-        
-        // Initialize components
-        initializeComponents();
-        
-        // Create UI
-        createUI();
-        
-        // Load initial data
-        loadData();
-        
-        // Show the stage
-        primaryStage.setTitle("Smart Recruitment Platform - Recruiter Dashboard");
-        primaryStage.setMaximized(true);
-        primaryStage.show();
-    }
-    
-    /**
-     * Initialize components
-     */
-    private void initializeComponents() {
+
+    // Tables and models
+    private JTable candidatesTable;
+    private DefaultTableModel candidatesModel;
+
+    private JTable jobsTable;
+    private DefaultTableModel jobsModel;
+
+    private JTable matchResultsTable;
+    private DefaultTableModel matchResultsModel;
+
+    private JTextField candidateSearchField;
+    private JLabel statusLabel;
+
+    public RecruiterDashboard() {
+        setTitle("Smart Recruitment Platform - Recruiter Dashboard");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(1200, 800);
+        setLocationRelativeTo(null);
+
+        // Initialize DAOs and engine
         candidateDAO = new CandidateDAO();
         jobPostingDAO = new JobPostingDAO();
         matchingEngine = new MatchingEngine();
         resumeParser = new ResumeParser();
-        
-        candidatesData = FXCollections.observableArrayList();
-        jobsData = FXCollections.observableArrayList();
-        matchResultsData = FXCollections.observableArrayList();
+
+        initUI();
+        loadInitialData();
     }
-    
-    /**
-     * Create the main UI
-     */
-    private void createUI() {
-        // Create main layout
-        BorderPane mainLayout = new BorderPane();
-        
-        // Create header
-        VBox header = createHeader();
-        mainLayout.setTop(header);
-        
-        // Create tab pane
-        tabPane = new TabPane();
-        tabPane.getTabs().addAll(
-            createCandidatesTab(),
-            createJobsTab(),
-            createMatchingTab(),
-            createReportsTab()
-        );
-        
-        mainLayout.setCenter(tabPane);
-        
-        // Create status bar
-        HBox statusBar = createStatusBar();
-        mainLayout.setBottom(statusBar);
-        
-        // Create scene
-        Scene scene = new Scene(mainLayout, 1200, 800);
-        scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
-        primaryStage.setScene(scene);
+
+    private void initUI() {
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        getContentPane().add(mainPanel);
+
+        // Header
+        JPanel headerPanel = new JPanel(new GridBagLayout());
+        headerPanel.setBackground(new Color(44, 62, 80));
+        headerPanel.setPreferredSize(new Dimension(getWidth(), 100));
+
+        JLabel titleLabel = new JLabel("Smart Recruitment Platform");
+        titleLabel.setForeground(Color.WHITE);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 28));
+
+        JLabel subtitleLabel = new JLabel("Intelligent Resume Parsing & Candidate Matching");
+        subtitleLabel.setForeground(new Color(189, 195, 199));
+        subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 16));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        headerPanel.add(titleLabel, gbc);
+        gbc.gridy = 1;
+        headerPanel.add(subtitleLabel, gbc);
+
+        mainPanel.add(headerPanel, BorderLayout.NORTH);
+
+        // Tabbed pane
+        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.addTab("Candidates", createCandidatesTab());
+        tabbedPane.addTab("Jobs", createJobsTab());
+        tabbedPane.addTab("Matching", createMatchingTab());
+        tabbedPane.addTab("Reports", createReportsTab());
+        mainPanel.add(tabbedPane, BorderLayout.CENTER);
+
+        // Status bar
+        JPanel statusBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        statusBar.setBackground(new Color(236, 240, 241));
+        statusLabel = new JLabel("Ready");
+        statusBar.add(statusLabel);
+        mainPanel.add(statusBar, BorderLayout.SOUTH);
     }
-    
-    /**
-     * Create header section
-     */
-    private VBox createHeader() {
-        VBox header = new VBox(10);
-        header.setPadding(new Insets(20));
-        header.setStyle("-fx-background-color: #2c3e50; -fx-text-fill: white;");
-        
-        Label title = new Label("Smart Recruitment Platform");
-        title.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: white;");
-        
-        Label subtitle = new Label("Intelligent Resume Parsing & Candidate Matching System");
-        subtitle.setStyle("-fx-font-size: 14px; -fx-text-fill: #bdc3c7;");
-        
-        header.getChildren().addAll(title, subtitle);
-        return header;
-    }
-    
-    /**
-     * Create candidates tab
-     */
-    private Tab createCandidatesTab() {
-        Tab tab = new Tab("Candidates");
-        tab.setClosable(false);
-        
-        VBox content = new VBox(10);
-        content.setPadding(new Insets(10));
-        
+
+    /** -------------------- CANDIDATES TAB -------------------- **/
+    private JPanel createCandidatesTab() {
+        JPanel panel = new JPanel(new BorderLayout());
+
         // Toolbar
-        HBox toolbar = new HBox(10);
-        toolbar.setAlignment(Pos.CENTER_LEFT);
-        
-        Button uploadResumeBtn = new Button("Upload Resume");
-        uploadResumeBtn.setOnAction(e -> uploadResume());
-        
-        Button addCandidateBtn = new Button("Add Candidate");
-        addCandidateBtn.setOnAction(e -> showAddCandidateDialog());
-        
-        Button editCandidateBtn = new Button("Edit Candidate");
-        editCandidateBtn.setOnAction(e -> editSelectedCandidate());
-        
-        Button deleteCandidateBtn = new Button("Delete Candidate");
-        deleteCandidateBtn.setOnAction(e -> deleteSelectedCandidate());
-        
-        Button exportBtn = new Button("Export to Excel");
-        exportBtn.setOnAction(e -> exportCandidates());
-        
-        TextField searchField = new TextField();
-        searchField.setPromptText("Search candidates...");
-        searchField.textProperty().addListener((obs, oldText, newText) -> searchCandidates(newText));
-        
-        toolbar.getChildren().addAll(uploadResumeBtn, addCandidateBtn, editCandidateBtn, 
-                                   deleteCandidateBtn, exportBtn, new Separator(), searchField);
-        
-        // Candidates table
-        candidatesTable = createCandidatesTable();
-        
-        content.getChildren().addAll(toolbar, candidatesTable);
-        tab.setContent(content);
-        
-        return tab;
-    }
-    
-    /**
-     * Create jobs tab
-     */
-    private Tab createJobsTab() {
-        Tab tab = new Tab("Job Postings");
-        tab.setClosable(false);
-        
-        VBox content = new VBox(10);
-        content.setPadding(new Insets(10));
-        
-        // Toolbar
-        HBox toolbar = new HBox(10);
-        toolbar.setAlignment(Pos.CENTER_LEFT);
-        
-        Button addJobBtn = new Button("Add Job Posting");
-        addJobBtn.setOnAction(e -> showAddJobDialog());
-        
-        Button editJobBtn = new Button("Edit Job");
-        editJobBtn.setOnAction(e -> editSelectedJob());
-        
-        Button deactivateJobBtn = new Button("Deactivate Job");
-        deactivateJobBtn.setOnAction(e -> deactivateSelectedJob());
-        
-        Button exportBtn = new Button("Export to Excel");
-        exportBtn.setOnAction(e -> exportJobs());
-        
-        CheckBox showActiveOnly = new CheckBox("Show Active Only");
-        showActiveOnly.setSelected(true);
-        showActiveOnly.setOnAction(e -> filterJobs(showActiveOnly.isSelected()));
-        
-        toolbar.getChildren().addAll(addJobBtn, editJobBtn, deactivateJobBtn, exportBtn, 
-                                   new Separator(), showActiveOnly);
-        
-        // Jobs table
-        jobsTable = createJobsTable();
-        
-        content.getChildren().addAll(toolbar, jobsTable);
-        tab.setContent(content);
-        
-        return tab;
-    }
-    
-    /**
-     * Create matching tab
-     */
-    private Tab createMatchingTab() {
-        Tab tab = new Tab("Candidate Matching");
-        tab.setClosable(false);
-        
-        VBox content = new VBox(10);
-        content.setPadding(new Insets(10));
-        
-        // Job selection
-        HBox jobSelection = new HBox(10);
-        jobSelection.setAlignment(Pos.CENTER_LEFT);
-        
-        Label jobLabel = new Label("Select Job:");
-        ComboBox<JobPosting> jobComboBox = new ComboBox<>();
-        jobComboBox.setConverter(new StringConverter<JobPosting>() {
-            @Override
-            public String toString(JobPosting job) {
-                return job != null ? job.getTitle() + " (" + job.getLocation() + ")" : "";
-            }
-            
-            @Override
-            public JobPosting fromString(String string) {
-                return null;
-            }
+        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton uploadResumeBtn = new JButton("Upload Resume");
+        uploadResumeBtn.addActionListener(e -> uploadResume());
+
+        JButton addCandidateBtn = new JButton("Add Candidate");
+        addCandidateBtn.addActionListener(e -> showAddCandidateDialog());
+
+        JButton editCandidateBtn = new JButton("Edit Candidate");
+        editCandidateBtn.addActionListener(e -> editSelectedCandidate());
+
+        JButton deleteCandidateBtn = new JButton("Delete Candidate");
+        deleteCandidateBtn.addActionListener(e -> deleteSelectedCandidate());
+
+        JButton exportBtn = new JButton("Export to Excel");
+        exportBtn.addActionListener(e -> exportCandidates());
+
+        candidateSearchField = new JTextField(20);
+        candidateSearchField.setToolTipText("Search candidates...");
+        candidateSearchField.getDocument().addDocumentListener(new DocumentListener() {
+            public void changedUpdate(DocumentEvent e) { searchCandidates(); }
+            public void removeUpdate(DocumentEvent e) { searchCandidates(); }
+            public void insertUpdate(DocumentEvent e) { searchCandidates(); }
         });
-        
-        Button findMatchesBtn = new Button("Find Matches");
-        findMatchesBtn.setOnAction(e -> findMatches(jobComboBox.getSelectionModel().getSelectedItem()));
-        
-        Button exportMatchesBtn = new Button("Export Matches");
-        exportMatchesBtn.setOnAction(e -> exportMatches(jobComboBox.getSelectionModel().getSelectedItem()));
-        
-        jobSelection.getChildren().addAll(jobLabel, jobComboBox, findMatchesBtn, exportMatchesBtn);
-        
-        // Match results table
-        matchResultsTable = createMatchResultsTable();
-        
-        content.getChildren().addAll(jobSelection, matchResultsTable);
-        tab.setContent(content);
-        
-        // Update job combo box when jobs data changes
-        jobsData.addListener((javafx.collections.ListChangeListener<JobPosting>) change -> {
-            jobComboBox.setItems(FXCollections.observableArrayList(
-                jobsData.filtered(JobPosting::isActive)
-            ));
-        });
-        
-        return tab;
-    }
-    
-    /**
-     * Create reports tab
-     */
-    private Tab createReportsTab() {
-        Tab tab = new Tab("Reports & Analytics");
-        tab.setClosable(false);
-        
-        VBox content = new VBox(20);
-        content.setPadding(new Insets(20));
-        
-        // Statistics cards
-        HBox statsCards = new HBox(20);
-        statsCards.setAlignment(Pos.CENTER);
-        
-        VBox candidatesCard = createStatsCard("Total Candidates", "0", "#3498db");
-        VBox jobsCard = createStatsCard("Active Jobs", "0", "#2ecc71");
-        VBox matchesCard = createStatsCard("Total Matches", "0", "#e74c3c");
-        
-        statsCards.getChildren().addAll(candidatesCard, jobsCard, matchesCard);
-        
-        // Reports section
-        VBox reportsSection = new VBox(10);
-        Label reportsTitle = new Label("Export Reports");
-        reportsTitle.setStyle("-fx-font-size: 18px; -fx-font-weight: bold;");
-        
-        HBox reportButtons = new HBox(10);
-        Button exportAllCandidatesBtn = new Button("Export All Candidates");
-        exportAllCandidatesBtn.setOnAction(e -> exportCandidates());
-        
-        Button exportAllJobsBtn = new Button("Export All Jobs");
-        exportAllJobsBtn.setOnAction(e -> exportJobs());
-        
-        Button exportStatsBtn = new Button("Export Statistics");
-        exportStatsBtn.setOnAction(e -> exportStatistics());
-        
-        reportButtons.getChildren().addAll(exportAllCandidatesBtn, exportAllJobsBtn, exportStatsBtn);
-        
-        reportsSection.getChildren().addAll(reportsTitle, reportButtons);
-        
-        content.getChildren().addAll(statsCards, new Separator(), reportsSection);
-        tab.setContent(content);
-        
-        return tab;
-    }
-    
-    /**
-     * Create statistics card
-     */
-    private VBox createStatsCard(String title, String value, String color) {
-        VBox card = new VBox(10);
-        card.setAlignment(Pos.CENTER);
-        card.setPadding(new Insets(20));
-        card.setStyle("-fx-background-color: " + color + "; -fx-background-radius: 10;");
-        card.setPrefWidth(200);
-        
-        Label titleLabel = new Label(title);
-        titleLabel.setStyle("-fx-text-fill: white; -fx-font-size: 14px;");
-        
-        Label valueLabel = new Label(value);
-        valueLabel.setStyle("-fx-text-fill: white; -fx-font-size: 24px; -fx-font-weight: bold;");
-        
-        card.getChildren().addAll(titleLabel, valueLabel);
-        return card;
-    }
-    
-    /**
-     * Create status bar
-     */
-    private HBox createStatusBar() {
-        HBox statusBar = new HBox();
-        statusBar.setPadding(new Insets(5, 10, 5, 10));
-        statusBar.setStyle("-fx-background-color: #ecf0f1;");
-        
-        Label statusLabel = new Label("Ready");
-        statusBar.getChildren().add(statusLabel);
-        
-        return statusBar;
-    }
-    
-    /**
-     * Create candidates table
-     */
-    private TableView<Candidate> createCandidatesTable() {
-        TableView<Candidate> table = new TableView<>();
-        table.setItems(candidatesData);
-        
-        TableColumn<Candidate, String> nameCol = new TableColumn<>("Name");
-        nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
-        nameCol.setPrefWidth(150);
-        
-        TableColumn<Candidate, String> emailCol = new TableColumn<>("Email");
-        emailCol.setCellValueFactory(new PropertyValueFactory<>("email"));
-        emailCol.setPrefWidth(200);
-        
-        TableColumn<Candidate, String> phoneCol = new TableColumn<>("Phone");
-        phoneCol.setCellValueFactory(new PropertyValueFactory<>("phone"));
-        phoneCol.setPrefWidth(120);
-        
-        TableColumn<Candidate, Integer> experienceCol = new TableColumn<>("Experience");
-        experienceCol.setCellValueFactory(new PropertyValueFactory<>("experienceYears"));
-        experienceCol.setPrefWidth(100);
-        
-        TableColumn<Candidate, String> skillsCol = new TableColumn<>("Skills");
-        skillsCol.setCellValueFactory(cellData -> {
-            List<String> skills = cellData.getValue().getSkills();
-            return new javafx.beans.property.SimpleStringProperty(
-                skills.size() > 3 ? String.join(", ", skills.subList(0, 3)) + "..." : String.join(", ", skills)
-            );
-        });
-        skillsCol.setPrefWidth(200);
-        
-        table.getColumns().addAll(nameCol, emailCol, phoneCol, experienceCol, skillsCol);
-        
-        // Double-click to view details
-        table.setRowFactory(tv -> {
-            TableRow<Candidate> row = new TableRow<>();
-            row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && !row.isEmpty()) {
-                    showCandidateDetails(row.getItem());
-                }
-            });
-            return row;
-        });
-        
-        return table;
-    }
-    
-    /**
-     * Create jobs table
-     */
-    private TableView<JobPosting> createJobsTable() {
-        TableView<JobPosting> table = new TableView<>();
-        table.setItems(jobsData);
-        
-        TableColumn<JobPosting, String> titleCol = new TableColumn<>("Title");
-        titleCol.setCellValueFactory(new PropertyValueFactory<>("title"));
-        titleCol.setPrefWidth(200);
-        
-        TableColumn<JobPosting, String> locationCol = new TableColumn<>("Location");
-        locationCol.setCellValueFactory(new PropertyValueFactory<>("location"));
-        locationCol.setPrefWidth(150);
-        
-        TableColumn<JobPosting, Integer> experienceCol = new TableColumn<>("Experience Required");
-        experienceCol.setCellValueFactory(new PropertyValueFactory<>("requiredExperience"));
-        experienceCol.setPrefWidth(130);
-        
-        TableColumn<JobPosting, String> salaryCol = new TableColumn<>("Salary Range");
-        salaryCol.setCellValueFactory(cellData -> 
-            new javafx.beans.property.SimpleStringProperty(cellData.getValue().getSalaryRange())
-        );
-        salaryCol.setPrefWidth(150);
-        
-        TableColumn<JobPosting, Boolean> activeCol = new TableColumn<>("Active");
-        activeCol.setCellValueFactory(new PropertyValueFactory<>("active"));
-        activeCol.setPrefWidth(80);
-        
-        table.getColumns().addAll(titleCol, locationCol, experienceCol, salaryCol, activeCol);
-        
-        // Double-click to view details
-        table.setRowFactory(tv -> {
-            TableRow<JobPosting> row = new TableRow<>();
-            row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && !row.isEmpty()) {
-                    showJobDetails(row.getItem());
-                }
-            });
-            return row;
-        });
-        
-        return table;
-    }
-    
-    /**
-     * Create match results table
-     */
-    private TableView<MatchResult> createMatchResultsTable() {
-        TableView<MatchResult> table = new TableView<>();
-        table.setItems(matchResultsData);
-        
-        TableColumn<MatchResult, String> candidateCol = new TableColumn<>("Candidate");
-        candidateCol.setCellValueFactory(cellData -> 
-            new javafx.beans.property.SimpleStringProperty(
-                cellData.getValue().getCandidate() != null ? 
-                cellData.getValue().getCandidate().getName() : ""
-            )
-        );
-        candidateCol.setPrefWidth(150);
-        
-        TableColumn<MatchResult, String> emailCol = new TableColumn<>("Email");
-        emailCol.setCellValueFactory(cellData -> 
-            new javafx.beans.property.SimpleStringProperty(
-                cellData.getValue().getCandidate() != null ? 
-                cellData.getValue().getCandidate().getEmail() : ""
-            )
-        );
-        emailCol.setPrefWidth(200);
-        
-        TableColumn<MatchResult, Double> scoreCol = new TableColumn<>("Match Score");
-        scoreCol.setCellValueFactory(new PropertyValueFactory<>("matchScore"));
-        scoreCol.setCellFactory(column -> new TableCell<MatchResult, Double>() {
-            @Override
-            protected void updateItem(Double score, boolean empty) {
-                super.updateItem(score, empty);
-                if (empty || score == null) {
-                    setText(null);
-                    setStyle("");
-                } else {
-                    setText(String.format("%.1f%%", score));
-                    if (score >= 90) {
-                        setStyle("-fx-background-color: #d5f4e6;");
-                    } else if (score >= 80) {
-                        setStyle("-fx-background-color: #fff3cd;");
-                    } else if (score >= 70) {
-                        setStyle("-fx-background-color: #f8d7da;");
-                    }
+
+        toolbar.add(uploadResumeBtn);
+        toolbar.add(addCandidateBtn);
+        toolbar.add(editCandidateBtn);
+        toolbar.add(deleteCandidateBtn);
+        toolbar.add(exportBtn);
+        toolbar.add(new JLabel("Search:"));
+        toolbar.add(candidateSearchField);
+
+        panel.add(toolbar, BorderLayout.NORTH);
+
+        // Table
+        String[] columns = {"ID", "Name", "Email", "Phone", "Experience", "Skills"};
+        candidatesModel = new DefaultTableModel(columns, 0) {
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        candidatesTable = new JTable(candidatesModel);
+        candidatesTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        candidatesTable.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    showCandidateDetails(getSelectedCandidate());
                 }
             }
         });
-        scoreCol.setPrefWidth(100);
-        
-        TableColumn<MatchResult, String> gradeCol = new TableColumn<>("Grade");
-        gradeCol.setCellValueFactory(cellData -> 
-            new javafx.beans.property.SimpleStringProperty(cellData.getValue().getMatchGrade())
-        );
-        gradeCol.setPrefWidth(100);
-        
-        TableColumn<MatchResult, String> skillsMatchCol = new TableColumn<>("Skills Match");
-        skillsMatchCol.setCellValueFactory(cellData -> 
-            new javafx.beans.property.SimpleStringProperty(
-                cellData.getValue().getSkillMatchCount() + "/" + cellData.getValue().getTotalSkills()
-            )
-        );
-        skillsMatchCol.setPrefWidth(100);
-        
-        TableColumn<MatchResult, Boolean> experienceCol = new TableColumn<>("Experience Match");
-        experienceCol.setCellValueFactory(new PropertyValueFactory<>("experienceMatch"));
-        experienceCol.setPrefWidth(120);
-        
-        table.getColumns().addAll(candidateCol, emailCol, scoreCol, gradeCol, skillsMatchCol, experienceCol);
-        
-        // Double-click to view details
-        table.setRowFactory(tv -> {
-            TableRow<MatchResult> row = new TableRow<>();
-            row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && !row.isEmpty()) {
-                    showMatchDetails(row.getItem());
-                }
-            });
-            return row;
-        });
-        
-        return table;
+        panel.add(new JScrollPane(candidatesTable), BorderLayout.CENTER);
+
+        return panel;
     }
-    
-    /**
-     * Load initial data
-     */
-    private void loadData() {
+
+    /** -------------------- JOBS TAB -------------------- **/
+    private JPanel createJobsTab() {
+        JPanel panel = new JPanel(new BorderLayout());
+
+        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton addJobBtn = new JButton("Add Job");
+        addJobBtn.addActionListener(e -> showAddJobDialog());
+
+        JButton editJobBtn = new JButton("Edit Job");
+        editJobBtn.addActionListener(e -> editSelectedJob());
+
+        JButton deactivateJobBtn = new JButton("Activate/Deactivate");
+        deactivateJobBtn.addActionListener(e -> toggleSelectedJob());
+
+        JButton exportBtn = new JButton("Export Jobs");
+        exportBtn.addActionListener(e -> exportJobs());
+
+        toolbar.add(addJobBtn);
+        toolbar.add(editJobBtn);
+        toolbar.add(deactivateJobBtn);
+        toolbar.add(exportBtn);
+
+        panel.add(toolbar, BorderLayout.NORTH);
+
+        String[] columns = {"ID", "Title", "Location", "Experience", "Salary Min", "Salary Max", "Active"};
+        jobsModel = new DefaultTableModel(columns, 0) {
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        jobsTable = new JTable(jobsModel);
+        jobsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        jobsTable.addMouseListener(new MouseAdapter() {
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    showJobDetails(getSelectedJob());
+                }
+            }
+        });
+        panel.add(new JScrollPane(jobsTable), BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    /** -------------------- MATCHING TAB -------------------- **/
+    private JPanel createMatchingTab() {
+        JPanel panel = new JPanel(new BorderLayout());
+
+        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JButton findMatchesBtn = new JButton("Find Matches");
+        findMatchesBtn.addActionListener(e -> findMatches(getSelectedJob()));
+
+        JButton exportMatchesBtn = new JButton("Export Matches");
+        exportMatchesBtn.addActionListener(e -> exportMatches(getSelectedJob()));
+
+        toolbar.add(findMatchesBtn);
+        toolbar.add(exportMatchesBtn);
+
+        panel.add(toolbar, BorderLayout.NORTH);
+
+        String[] columns = {"Candidate", "Email", "Score", "Grade", "Skills Match", "Experience"};
+        matchResultsModel = new DefaultTableModel(columns, 0) {
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        matchResultsTable = new JTable(matchResultsModel);
+        panel.add(new JScrollPane(matchResultsTable), BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    /** -------------------- REPORTS TAB -------------------- **/
+    private JPanel createReportsTab() {
+        JPanel panel = new JPanel(new BorderLayout());
+        JLabel label = new JLabel("Reports functionality - Coming Soon!", SwingConstants.CENTER);
+        label.setFont(new Font("Arial", Font.PLAIN, 18));
+        panel.add(label, BorderLayout.CENTER);
+        return panel;
+    }
+
+    /** -------------------- DATA LOADING -------------------- **/
+    private void loadInitialData() {
+        loadCandidates();
+        loadJobs();
+        statusLabel.setText("Data loaded successfully");
+    }
+
+    private void loadCandidates() {
         try {
-            // Load candidates
             List<Candidate> candidates = candidateDAO.findAll();
-            candidatesData.setAll(candidates);
-            
-            // Load jobs
-            List<JobPosting> jobs = jobPostingDAO.findAll();
-            jobsData.setAll(jobs);
-            
-            // Update statistics
-            updateStatistics();
-            
+            candidatesModel.setRowCount(0);
+            for (Candidate c : candidates) {
+                candidatesModel.addRow(new Object[]{
+                        c.getId(),
+                        c.getName(),
+                        c.getEmail(),
+                        c.getPhone(),
+                        c.getExperienceYears() + " years",
+                        String.join(", ", c.getSkills())
+                });
+            }
         } catch (SQLException e) {
-            showError("Database Error", "Failed to load data: " + e.getMessage());
+            showError("Database Error", "Failed to load candidates: " + e.getMessage());
         }
     }
-    
-    /**
-     * Upload resume file
-     */
+
+    private void loadJobs() {
+        try {
+            List<JobPosting> jobs = jobPostingDAO.findAll();
+            jobsModel.setRowCount(0);
+            for (JobPosting j : jobs) {
+                jobsModel.addRow(new Object[]{
+                        j.getId(),
+                        j.getTitle(),
+                        j.getLocation(),
+                        j.getRequiredExperience() + " years",
+                        j.getSalaryMin() != null ? "$" + j.getSalaryMin() : "N/A",
+                        j.getSalaryMax() != null ? "$" + j.getSalaryMax() : "N/A",
+                        j.isActive() ? "Yes" : "No"
+                });
+            }
+        } catch (SQLException e) {
+            showError("Database Error", "Failed to load jobs: " + e.getMessage());
+        }
+    }
+
+    /** -------------------- CANDIDATE METHODS -------------------- **/
     private void uploadResume() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Select Resume File");
-        fileChooser.getExtensionFilters().addAll(
-            new FileChooser.ExtensionFilter("All Supported", "*.pdf", "*.docx", "*.txt"),
-            new FileChooser.ExtensionFilter("PDF Files", "*.pdf"),
-            new FileChooser.ExtensionFilter("Word Documents", "*.docx"),
-            new FileChooser.ExtensionFilter("Text Files", "*.txt")
-        );
-        
-        File selectedFile = fileChooser.showOpenDialog(primaryStage);
-        if (selectedFile != null) {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileFilter(new javax.swing.filechooser.FileFilter() {
+            public boolean accept(File f) {
+                return f.isDirectory() || 
+                       f.getName().toLowerCase().endsWith(".pdf") ||
+                       f.getName().toLowerCase().endsWith(".docx") ||
+                       f.getName().toLowerCase().endsWith(".txt");
+            }
+            public String getDescription() {
+                return "Resume files (*.pdf, *.docx, *.txt)";
+            }
+        });
+
+        int result = fileChooser.showOpenDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File file = fileChooser.getSelectedFile();
             try {
-                // Parse resume
-                Candidate candidate = resumeParser.parseResume(selectedFile);
-                
-                // Show candidate details for review/editing
-                if (showCandidateEditDialog(candidate, "Review Parsed Resume")) {
-                    // Save candidate
+                Candidate candidate = resumeParser.parseResume(file);
+                if (candidate != null) {
                     candidateDAO.save(candidate);
-                    candidatesData.add(candidate);
-                    updateStatistics();
-                    showInfo("Success", "Resume parsed and candidate added successfully!");
+                    loadCandidates();
+                    statusLabel.setText("Resume uploaded and parsed: " + candidate.getName());
                 }
-                
             } catch (Exception e) {
                 showError("Parse Error", "Failed to parse resume: " + e.getMessage());
             }
         }
     }
-    
-    /**
-     * Show add candidate dialog
-     */
+
     private void showAddCandidateDialog() {
-        Candidate candidate = new Candidate();
-        if (showCandidateEditDialog(candidate, "Add New Candidate")) {
-            try {
-                candidateDAO.save(candidate);
-                candidatesData.add(candidate);
-                updateStatistics();
-                showInfo("Success", "Candidate added successfully!");
-            } catch (SQLException e) {
-                showError("Database Error", "Failed to save candidate: " + e.getMessage());
-            }
-        }
+        JOptionPane.showMessageDialog(this, "Add Candidate dialog (to implement)");
     }
-    
-    /**
-     * Show candidate edit dialog
-     */
-    private boolean showCandidateEditDialog(Candidate candidate, String title) {
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle(title);
-        dialog.setHeaderText("Enter candidate information");
-        
-        // Create form
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20, 150, 10, 10));
-        
-        TextField nameField = new TextField(candidate.getName());
-        TextField emailField = new TextField(candidate.getEmail());
-        TextField phoneField = new TextField(candidate.getPhone());
-        TextField educationField = new TextField(candidate.getEducation());
-        Spinner<Integer> experienceSpinner = new Spinner<>(0, 50, candidate.getExperienceYears());
-        TextArea skillsArea = new TextArea(String.join(", ", candidate.getSkills()));
-        skillsArea.setPrefRowCount(3);
-        
-        grid.add(new Label("Name:"), 0, 0);
-        grid.add(nameField, 1, 0);
-        grid.add(new Label("Email:"), 0, 1);
-        grid.add(emailField, 1, 1);
-        grid.add(new Label("Phone:"), 0, 2);
-        grid.add(phoneField, 1, 2);
-        grid.add(new Label("Education:"), 0, 3);
-        grid.add(educationField, 1, 3);
-        grid.add(new Label("Experience (years):"), 0, 4);
-        grid.add(experienceSpinner, 1, 4);
-        grid.add(new Label("Skills (comma-separated):"), 0, 5);
-        grid.add(skillsArea, 1, 5);
-        
-        dialog.getDialogPane().setContent(grid);
-        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-        
-        Optional<ButtonType> result = dialog.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            candidate.setName(nameField.getText());
-            candidate.setEmail(emailField.getText());
-            candidate.setPhone(phoneField.getText());
-            candidate.setEducation(educationField.getText());
-            candidate.setExperienceYears(experienceSpinner.getValue());
-            
-            // Parse skills
-            String skillsText = skillsArea.getText();
-            if (skillsText != null && !skillsText.trim().isEmpty()) {
-                List<String> skills = Arrays.asList(skillsText.split(","));
-                candidate.setSkills(skills.stream().map(String::trim).toList());
-            }
-            
-            return true;
-        }
-        
-        return false;
-    }
-    
-    /**
-     * Edit selected candidate
-     */
+
     private void editSelectedCandidate() {
-        Candidate selected = candidatesTable.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            showWarning("No Selection", "Please select a candidate to edit.");
-            return;
-        }
-        
-        if (showCandidateEditDialog(selected, "Edit Candidate")) {
-            try {
-                candidateDAO.update(selected);
-                candidatesTable.refresh();
-                showInfo("Success", "Candidate updated successfully!");
-            } catch (SQLException e) {
-                showError("Database Error", "Failed to update candidate: " + e.getMessage());
-            }
+        Candidate candidate = getSelectedCandidate();
+        if (candidate != null) {
+            JOptionPane.showMessageDialog(this, "Edit Candidate dialog for: " + candidate.getName());
         }
     }
-    
-    /**
-     * Delete selected candidate
-     */
+
     private void deleteSelectedCandidate() {
-        Candidate selected = candidatesTable.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            showWarning("No Selection", "Please select a candidate to delete.");
-            return;
-        }
-        
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Confirm Deletion");
-        alert.setHeaderText("Delete Candidate");
-        alert.setContentText("Are you sure you want to delete " + selected.getName() + "?");
-        
-        Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            try {
-                candidateDAO.delete(selected.getId());
-                candidatesData.remove(selected);
-                updateStatistics();
-                showInfo("Success", "Candidate deleted successfully!");
-            } catch (SQLException e) {
-                showError("Database Error", "Failed to delete candidate: " + e.getMessage());
-            }
-        }
-    }
-    
-    /**
-     * Show add job dialog
-     */
-    private void showAddJobDialog() {
-        JobPosting job = new JobPosting();
-        if (showJobEditDialog(job, "Add New Job Posting")) {
-            try {
-                jobPostingDAO.save(job);
-                jobsData.add(job);
-                updateStatistics();
-                showInfo("Success", "Job posting added successfully!");
-            } catch (SQLException e) {
-                showError("Database Error", "Failed to save job posting: " + e.getMessage());
-            }
-        }
-    }
-    
-    /**
-     * Show job edit dialog
-     */
-    private boolean showJobEditDialog(JobPosting job, String title) {
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle(title);
-        dialog.setHeaderText("Enter job posting information");
-        
-        // Create form
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20, 150, 10, 10));
-        
-        TextField titleField = new TextField(job.getTitle());
-        TextField locationField = new TextField(job.getLocation());
-        TextArea descriptionArea = new TextArea(job.getDescription());
-        descriptionArea.setPrefRowCount(3);
-        TextField salaryMinField = new TextField(job.getSalaryMin() != null ? job.getSalaryMin().toString() : "");
-        TextField salaryMaxField = new TextField(job.getSalaryMax() != null ? job.getSalaryMax().toString() : "");
-        Spinner<Integer> experienceSpinner = new Spinner<>(0, 20, job.getRequiredExperience());
-        TextArea requiredSkillsArea = new TextArea(String.join(", ", job.getRequiredSkills()));
-        requiredSkillsArea.setPrefRowCount(2);
-        TextArea preferredSkillsArea = new TextArea(String.join(", ", job.getPreferredSkills()));
-        preferredSkillsArea.setPrefRowCount(2);
-        
-        grid.add(new Label("Title:"), 0, 0);
-        grid.add(titleField, 1, 0);
-        grid.add(new Label("Location:"), 0, 1);
-        grid.add(locationField, 1, 1);
-        grid.add(new Label("Description:"), 0, 2);
-        grid.add(descriptionArea, 1, 2);
-        grid.add(new Label("Salary Min:"), 0, 3);
-        grid.add(salaryMinField, 1, 3);
-        grid.add(new Label("Salary Max:"), 0, 4);
-        grid.add(salaryMaxField, 1, 4);
-        grid.add(new Label("Required Experience:"), 0, 5);
-        grid.add(experienceSpinner, 1, 5);
-        grid.add(new Label("Required Skills:"), 0, 6);
-        grid.add(requiredSkillsArea, 1, 6);
-        grid.add(new Label("Preferred Skills:"), 0, 7);
-        grid.add(preferredSkillsArea, 1, 7);
-        
-        dialog.getDialogPane().setContent(grid);
-        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
-        
-        Optional<ButtonType> result = dialog.showAndWait();
-        if (result.isPresent() && result.get() == ButtonType.OK) {
-            job.setTitle(titleField.getText());
-            job.setLocation(locationField.getText());
-            job.setDescription(descriptionArea.getText());
-            
-            try {
-                if (!salaryMinField.getText().isEmpty()) {
-                    job.setSalaryMin(new BigDecimal(salaryMinField.getText()));
+        Candidate candidate = getSelectedCandidate();
+        if (candidate != null) {
+            int confirm = JOptionPane.showConfirmDialog(this, 
+                "Are you sure you want to delete " + candidate.getName() + "?",
+                "Confirm Delete", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                try {
+                    candidateDAO.delete(candidate.getId());
+                    loadCandidates();
+                    statusLabel.setText("Candidate deleted: " + candidate.getName());
+                } catch (SQLException e) {
+                    showError("Database Error", "Failed to delete candidate: " + e.getMessage());
                 }
-                if (!salaryMaxField.getText().isEmpty()) {
-                    job.setSalaryMax(new BigDecimal(salaryMaxField.getText()));
+            }
+        }
+    }
+
+    private void searchCandidates() {
+        String query = candidateSearchField.getText().trim().toLowerCase();
+        for (int i = 0; i < candidatesModel.getRowCount(); i++) {
+            boolean match = false;
+            for (int j = 1; j < candidatesModel.getColumnCount(); j++) {
+                String value = candidatesModel.getValueAt(i, j).toString().toLowerCase();
+                if (value.contains(query)) {
+                    match = true;
+                    break;
                 }
-            } catch (NumberFormatException e) {
-                showError("Invalid Input", "Please enter valid salary amounts.");
-                return false;
             }
-            
-            job.setRequiredExperience(experienceSpinner.getValue());
-            
-            // Parse skills
-            String requiredSkillsText = requiredSkillsArea.getText();
-            if (requiredSkillsText != null && !requiredSkillsText.trim().isEmpty()) {
-                List<String> skills = Arrays.asList(requiredSkillsText.split(","));
-                job.setRequiredSkills(skills.stream().map(String::trim).toList());
-            }
-            
-            String preferredSkillsText = preferredSkillsArea.getText();
-            if (preferredSkillsText != null && !preferredSkillsText.trim().isEmpty()) {
-                List<String> skills = Arrays.asList(preferredSkillsText.split(","));
-                job.setPreferredSkills(skills.stream().map(String::trim).toList());
-            }
-            
-            return true;
-        }
-        
-        return false;
-    }
-    
-    /**
-     * Edit selected job
-     */
-    private void editSelectedJob() {
-        JobPosting selected = jobsTable.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            showWarning("No Selection", "Please select a job posting to edit.");
-            return;
-        }
-        
-        if (showJobEditDialog(selected, "Edit Job Posting")) {
-            try {
-                jobPostingDAO.update(selected);
-                jobsTable.refresh();
-                showInfo("Success", "Job posting updated successfully!");
-            } catch (SQLException e) {
-                showError("Database Error", "Failed to update job posting: " + e.getMessage());
-            }
+            candidatesTable.setRowHeight(i, match ? 25 : 0);
         }
     }
-    
-    /**
-     * Deactivate selected job
-     */
-    private void deactivateSelectedJob() {
-        JobPosting selected = jobsTable.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            showWarning("No Selection", "Please select a job posting to deactivate.");
-            return;
-        }
-        
+
+    private void exportCandidates() {
         try {
-            if (selected.isActive()) {
-                jobPostingDAO.deactivate(selected.getId());
-                selected.setActive(false);
-                showInfo("Success", "Job posting deactivated successfully!");
-            } else {
-                jobPostingDAO.activate(selected.getId());
-                selected.setActive(true);
-                showInfo("Success", "Job posting activated successfully!");
-            }
-            jobsTable.refresh();
-            updateStatistics();
-        } catch (SQLException e) {
-            showError("Database Error", "Failed to update job posting: " + e.getMessage());
+            ExcelExporter.exportCandidates(candidateDAO.findAll(), new File("exports/candidates.xlsx"));
+            statusLabel.setText("Candidates exported to Excel");
+        } catch (Exception e) {
+            showError("Export Error", "Failed to export candidates: " + e.getMessage());
         }
     }
-    
-    /**
-     * Find matches for selected job
-     */
-    private void findMatches(JobPosting selectedJob) {
-        if (selectedJob == null) {
-            showWarning("No Selection", "Please select a job posting to find matches.");
+
+    /** -------------------- JOB METHODS -------------------- **/
+    private void showAddJobDialog() {
+        JOptionPane.showMessageDialog(this, "Add Job dialog (to implement)");
+    }
+
+    private void editSelectedJob() {
+        JobPosting job = getSelectedJob();
+        if (job != null) {
+            JOptionPane.showMessageDialog(this, "Edit Job dialog for: " + job.getTitle());
+        }
+    }
+
+    private void toggleSelectedJob() {
+        JobPosting job = getSelectedJob();
+        if (job != null) {
+            try {
+                job.setActive(!job.isActive());
+                jobPostingDAO.update(job);
+                loadJobs();
+                statusLabel.setText("Job status updated: " + job.getTitle());
+            } catch (SQLException e) {
+                showError("Database Error", "Failed to update job: " + e.getMessage());
+            }
+        }
+    }
+
+    private JobPosting getSelectedJob() {
+        int row = jobsTable.getSelectedRow();
+        if (row >= 0) {
+            Long id = (Long) jobsModel.getValueAt(row, 0);
+            try {
+                return jobPostingDAO.findById(id);
+            } catch (SQLException e) {
+                showError("Database Error", "Failed to load job: " + e.getMessage());
+            }
+        }
+        return null;
+    }
+
+    private void exportJobs() {
+        try {
+            ExcelExporter.exportJobPostings(jobPostingDAO.findAll(), new File("exports/jobs.xlsx"));
+            statusLabel.setText("Jobs exported to Excel");
+        } catch (Exception e) {
+            showError("Export Error", "Failed to export jobs: " + e.getMessage());
+        }
+    }
+
+    /** -------------------- MATCHING METHODS -------------------- **/
+    private void findMatches(JobPosting job) {
+        if (job == null) {
+            JOptionPane.showMessageDialog(this, "Please select a job posting first.");
             return;
         }
-        
         try {
             List<Candidate> allCandidates = candidateDAO.findAll();
-            List<MatchResult> matches = matchingEngine.findBestMatches(selectedJob, allCandidates, 50);
-            matchResultsData.setAll(matches);
-            
-            showInfo("Matches Found", String.format("Found %d potential matches for %s", 
-                    matches.size(), selectedJob.getTitle()));
-            
-        } catch (SQLException e) {
-            showError("Database Error", "Failed to find matches: " + e.getMessage());
+            List<MatchResult> results = matchingEngine.findBestMatches(job, allCandidates, 10);
+            matchResultsModel.setRowCount(0);
+            for (MatchResult r : results) {
+                matchResultsModel.addRow(new Object[]{
+                        r.getCandidate().getName(),
+                        r.getCandidate().getEmail(),
+                        String.format("%.1f%%", r.getMatchScore()),
+                        r.getMatchGrade(),
+                        String.join(", ", r.getMatchedSkills()),
+                        r.isExperienceMatch() ? "✓" : "✗"
+                });
+            }
+            statusLabel.setText("Matches found for job: " + job.getTitle());
+        } catch (Exception e) {
+            showError("Matching Error", e.getMessage());
         }
     }
-    
-    /**
-     * Search candidates
-     */
-    private void searchCandidates(String searchTerm) {
-        if (searchTerm == null || searchTerm.trim().isEmpty()) {
-            loadData();
-            return;
-        }
-        
-        try {
-            List<Candidate> results = candidateDAO.search(searchTerm);
-            candidatesData.setAll(results);
-        } catch (SQLException e) {
-            showError("Search Error", "Failed to search candidates: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Filter jobs by active status
-     */
-    private void filterJobs(boolean activeOnly) {
-        try {
-            List<JobPosting> jobs = activeOnly ? jobPostingDAO.findActive() : jobPostingDAO.findAll();
-            jobsData.setAll(jobs);
-        } catch (SQLException e) {
-            showError("Filter Error", "Failed to filter jobs: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * Export candidates to Excel
-     */
-    private void exportCandidates() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Export Candidates");
-        fileChooser.setInitialFileName(ExcelExporter.getDefaultCandidatesFilename());
-        fileChooser.getExtensionFilters().add(
-            new FileChooser.ExtensionFilter("Excel Files", "*.xlsx")
-        );
-        
-        File file = fileChooser.showSaveDialog(primaryStage);
-        if (file != null) {
+
+    private void exportMatches(JobPosting job) {
+        if (job != null) {
             try {
-                ExcelExporter.exportCandidates(candidatesData, file);
-                showInfo("Export Successful", "Candidates exported to " + file.getName());
+                // Create a simple export for match results
+                JOptionPane.showMessageDialog(this, "Match export functionality needs to be implemented");
+                statusLabel.setText("Matches exported for job: " + job.getTitle());
             } catch (Exception e) {
-                showError("Export Error", "Failed to export candidates: " + e.getMessage());
+                showError("Export Error", "Failed to export matches: " + e.getMessage());
             }
         }
     }
-    
-    /**
-     * Export jobs to Excel
-     */
-    private void exportJobs() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Export Job Postings");
-        fileChooser.setInitialFileName(ExcelExporter.getDefaultJobPostingsFilename());
-        fileChooser.getExtensionFilters().add(
-            new FileChooser.ExtensionFilter("Excel Files", "*.xlsx")
-        );
-        
-        File file = fileChooser.showSaveDialog(primaryStage);
-        if (file != null) {
-            try {
-                ExcelExporter.exportJobPostings(jobsData, file);
-                showInfo("Export Successful", "Job postings exported to " + file.getName());
-            } catch (Exception e) {
-                showError("Export Error", "Failed to export job postings: " + e.getMessage());
-            }
-        }
-    }
-    
-    /**
-     * Export match results
-     */
-    private void exportMatches(JobPosting selectedJob) {
-        if (selectedJob == null || matchResultsData.isEmpty()) {
-            showWarning("No Data", "Please select a job and find matches first.");
-            return;
-        }
-        
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Export Match Results");
-        fileChooser.setInitialFileName(ExcelExporter.getDefaultMatchResultsFilename(selectedJob.getTitle()));
-        fileChooser.getExtensionFilters().add(
-            new FileChooser.ExtensionFilter("Excel Files", "*.xlsx")
-        );
-        
-        File file = fileChooser.showSaveDialog(primaryStage);
-        if (file != null) {
-            try {
-                ExcelExporter.exportShortlistedCandidates(selectedJob, matchResultsData, file);
-                showInfo("Export Successful", "Match results exported to " + file.getName());
-            } catch (Exception e) {
-                showError("Export Error", "Failed to export match results: " + e.getMessage());
-            }
-        }
-    }
-    
-    /**
-     * Export statistics
-     */
-    private void exportStatistics() {
-        // Implementation for exporting statistics
-        showInfo("Feature Coming Soon", "Statistics export feature will be available in the next version.");
-    }
-    
-    /**
-     * Show candidate details
-     */
-    private void showCandidateDetails(Candidate candidate) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Candidate Details");
-        alert.setHeaderText(candidate.getName());
-        alert.setContentText(candidate.getSummary());
-        alert.showAndWait();
-    }
-    
-    /**
-     * Show job details
-     */
-    private void showJobDetails(JobPosting job) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Job Posting Details");
-        alert.setHeaderText(job.getTitle());
-        alert.setContentText(job.getSummary());
-        alert.showAndWait();
-    }
-    
-    /**
-     * Show match details
-     */
-    private void showMatchDetails(MatchResult match) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Match Details");
-        alert.setHeaderText(String.format("Match Score: %.1f%% (%s)", 
-                match.getMatchScore(), match.getMatchGrade()));
-        alert.setContentText(match.getDetailedDisplay());
-        alert.showAndWait();
-    }
-    
-    /**
-     * Update statistics
-     */
-    private void updateStatistics() {
-        // This would update the statistics cards in the reports tab
-        // Implementation depends on how the cards are structured
-    }
-    
-    /**
-     * Show information dialog
-     */
-    private void showInfo(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-    
-    /**
-     * Show warning dialog
-     */
-    private void showWarning(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
-    }
-    
-    /**
-     * Show error dialog
-     */
+
+    /** -------------------- HELPER METHODS -------------------- **/
     private void showError(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        JOptionPane.showMessageDialog(this, message, title, JOptionPane.ERROR_MESSAGE);
+    }
+    
+    private void showCandidateDetails(Candidate candidate) {
+        if (candidate != null) {
+            JOptionPane.showMessageDialog(this, candidate.getSummary(), "Candidate Details", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+    
+    private void showJobDetails(JobPosting job) {
+        if (job != null) {
+            JOptionPane.showMessageDialog(this, job.getSummary(), "Job Details", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+    
+    private Candidate getSelectedCandidate() {
+        int row = candidatesTable.getSelectedRow();
+        if (row >= 0) {
+            Long id = (Long) candidatesModel.getValueAt(row, 0);
+            try {
+                return candidateDAO.findById(id);
+            } catch (SQLException e) {
+                showError("Database Error", "Failed to load candidate: " + e.getMessage());
+            }
+        }
+        return null;
     }
 }

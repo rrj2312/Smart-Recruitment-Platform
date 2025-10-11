@@ -25,7 +25,7 @@ public class CandidateDAO {
         }
         
         String sql = """
-            INSERT INTO candidates (name, email, phone, education, experience_years, resume_text, created_at, updated_at)
+        INSERT INTO candidates (name, email, phone, education, experience_years, resume_text, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """;
         
@@ -360,7 +360,7 @@ public class CandidateDAO {
             return;
         }
         
-        String sql = "INSERT INTO candidate_skills (candidate_id, skill_name) VALUES (?, ?)";
+        String sql = "INSERT INTO candidate_skills (candidate_id, skill) VALUES (?, ?)";
         
         try (Connection connection = dbManager.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -395,7 +395,7 @@ public class CandidateDAO {
      * Find skills by candidate ID
      */
     private List<String> findSkillsByCandidateId(Long candidateId) throws SQLException {
-        String sql = "SELECT skill_name FROM candidate_skills WHERE candidate_id = ? ORDER BY skill_name";
+        String sql = "SELECT skill FROM candidate_skills WHERE candidate_id = ? ORDER BY skill";
         
         List<String> skills = new ArrayList<>();
         
@@ -406,7 +406,7 @@ public class CandidateDAO {
             
             try (ResultSet resultSet = statement.executeQuery()) {
                 while (resultSet.next()) {
-                    skills.add(resultSet.getString("skill_name"));
+                    skills.add(resultSet.getString("skill"));
                 }
             }
         }

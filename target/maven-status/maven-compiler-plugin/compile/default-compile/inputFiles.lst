@@ -5,12 +5,14 @@ C:\Users\Jenni\Desktop\Smart-recruitment-platform\src\main\java\com\recruitment\
 C:\Users\Jenni\Desktop\Smart-recruitment-platform\src\main\java\com\recruitment\database\JobPostingDAO.java
 C:\Users\Jenni\Desktop\Smart-recruitment-platform\src\main\java\com\recruitment\model\JobPosting.java
 C:\Users\Jenni\Desktop\Smart-recruitment-platform\src\main\java\com\recruitment\parser\ResumeParser.java
+C:\Users\Jenni\Desktop\Smart-recruitment-platform\src\main\java\com\recruitment\TestConnection.java
 C:\Users\Jenni\Desktop\Smart-recruitment-platform\src\main\java\com\recruitment\Main.java
 C:\Users\Jenni\Desktop\Smart-recruitment-platform\src\main\java\com\recruitment\parser\DOCXParser.java
 C:\Users\Jenni\Desktop\Smart-recruitment-platform\src\main\java\com\recruitment\ui\RecruiterDashboard.java
 C:\Users\Jenni\Desktop\Smart-recruitment-platform\src\main\java\com\recruitment\util\RegexUtils.java
 C:\Users\Jenni\Desktop\Smart-recruitment-platform\src\main\java\com\recruitment\util\ExcelExporter.java
 C:\Users\Jenni\Desktop\Smart-recruitment-platform\src\main\java\com\recruitment\database\DatabaseManager.java
+C:\Users\Jenni\Desktop\Smart-recruitment-platform\src\main\java\com\recruitment\DatabaseTest.java
 C:\Users\Jenni\Desktop\Smart-recruitment-platform\src\main\java\com\recruitment\model\MatchResult.java
 C:\Users\Jenni\Desktop\Smart-recruitment-platform\src\main\java\com\recruitment\parser\TextParser.java
 C:\Users\Jenni\Desktop\Smart-recruitment-platform\src\main\java\com\recruitment\database\CandidateDAO.java
