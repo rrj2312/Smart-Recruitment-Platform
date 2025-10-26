@@ -1,28 +1,36 @@
 # Smart Recruitment Platform
 
-A comprehensive Java-based recruitment system with resume parsing, job matching, and candidate management capabilities.
+A powerful **Java-based recruitment management system** designed to streamline the hiring process through automated resume parsing, intelligent candidate-job matching, and comprehensive candidate management.
 
-## Features
+---
 
-- **Resume Upload & Parsing**: Support for PDF, DOCX, and TXT formats
-- **Candidate Management**: Extract and store candidate details (Name, Email, Phone, Skills, Education, Experience)
-- **Job Posting Module**: Create and manage job postings with requirements
-- **Intelligent Matching Engine**: Skill-based matching with scoring algorithm
-- **Recruiter Dashboard**: JavaFX-based UI for managing jobs and viewing candidates
-- **Export Functionality**: Export shortlisted candidates to Excel
-- **Database Integration**: SQLite for data persistence
+## Overview
+This platform provides recruiters with an **end-to-end solution** for managing the recruitment lifecycle — from resume ingestion to candidate shortlisting and export.
 
-## Tech Stack
+---
 
-- Java 11+
-- Apache PDFBox (PDF parsing)
-- Apache POI (DOCX/Excel handling)
-- SQLite (Database)
-- JavaFX (UI)
-- Maven (Build tool)
+## Key Features
+- **Multi-Format Resume Parsing:** Automatically extract information from PDF, DOCX, and TXT resume files  
+- **Comprehensive Candidate Profiles:** Store and manage detailed candidate information including contact details, technical skills, work experience, and educational background  
+- **Job Posting Management:** Create and maintain job listings with specific skill requirements and qualifications  
+- **Smart Matching Algorithm:** Automatically match candidates to job openings using an intelligent scoring system based on skills, experience, and education  
+- **Interactive Dashboard:** User-friendly JavaFX interface for recruiters to manage the entire recruitment workflow  
+- **Data Export Capabilities:** Generate Excel reports of shortlisted candidates for further analysis  
+- **Persistent Storage:** SQLite database integration ensures all data is securely stored and easily retrievable  
 
-## Project Structure
+---
 
+## Technology Stack
+- **Java:** 11 or higher  
+- **Apache PDFBox:** PDF document parsing  
+- **Apache POI:** Microsoft Office document handling and Excel generation  
+- **SQLite:** Lightweight relational database  
+- **JavaFX:** Modern desktop UI framework  
+- **Maven:** Dependency management and build automation  
+
+---
+
+## Project Architecture
 ```
 smart-recruitment-platform/
 ├── src/main/java/com/recruitment/
@@ -54,69 +62,132 @@ smart-recruitment-platform/
 ├── pom.xml
 └── README.md
 ```
+## Getting Started
 
-## Setup Instructions
+### Prerequisites
+Ensure you have the following installed on your system:
+- Java Development Kit (JDK) 11 or newer  
+- Apache Maven 3.6 or higher  
+- JavaFX SDK (if not bundled with your JDK distribution)
 
-1. **Prerequisites**:
-   - Java 11 or higher
-   - Maven 3.6+
-   - JavaFX SDK (if not included in your JDK)
+---
 
-2. **Clone and Build**:
-   ```bash
-   cd smart-recruitment-platform
-   mvn clean compile
-   ```
+### Installation & Build
+Navigate to the project directory:
+```bash
+cd smart-recruitment-platform
+```
+Compile the project:
+```bash
+mvn clean compile
+```
+---
+Running the Application
 
-3. **Run the Application**:
-   ```bash
-   mvn javafx:run
-   ```
-   
-   Or compile and run directly:
-   ```bash
-   mvn clean package
-   java -jar target/smart-recruitment-platform-1.0.jar
-   ```
+Option 1: Using Maven
+```bash
+mvn javafx:run
+```
+Option 2: Using JAR file
+```bash
+mvn clean package
+java -jar target/smart-recruitment-platform-1.0.jar
+```
+---
+# Database Configuration
 
-4. **Database Setup**:
-   - SQLite database will be created automatically on first run
-   - Database file: `recruitment.db`
+The application automatically initializes the SQLite database on first launch.
+A file named recruitment.db will be created in the project root directory containing all necessary tables and relationships.
 
-## Usage
+---
 
-1. **Start the Application**: Run the main class to open the JavaFX dashboard
-2. **Upload Resumes**: Use the file upload feature to parse candidate resumes
-3. **Create Job Postings**: Add new job requirements through the dashboard
-4. **View Matches**: See ranked candidates for each job posting
-5. **Export Results**: Export shortlisted candidates to Excel format
+# How to Use
+Step 1: Launch the Platform
 
-## Database Schema
+Run the main application class to open the recruiter dashboard interface.
 
-The application uses SQLite with the following tables:
-- `candidates`: Stores candidate information
-- `job_postings`: Stores job requirements
-- `candidate_skills`: Many-to-many relationship for skills
-- `job_skills`: Required skills for jobs
+Step 2: Import Candidate Resumes
 
-## API Overview
+Navigate to the resume upload section and select resume files in PDF, DOCX, or TXT format.
+The system will automatically parse and extract candidate information.
 
-### Key Classes
+Step 3: Define Job Openings
 
-- **Candidate**: Model class for candidate data
-- **JobPosting**: Model class for job postings
-- **ResumeParser**: Main parser interface with format-specific implementations
-- **MatchingEngine**: Calculates match scores between candidates and jobs
-- **DatabaseManager**: Handles all database operations
-- **RecruiterDashboard**: JavaFX-based user interface
+Access the job posting module to create new positions with specific requirements — including required skills, experience levels, and educational qualifications.
 
-### Matching Algorithm
+Step 4: Review Match Results
 
-The matching engine uses:
-- Skill keyword matching (weighted scoring)
-- Experience level validation
-- Education requirements checking
-- Overall compatibility score (0-100%)
+The platform automatically ranks candidates for each job posting based on compatibility scores.
+View detailed match analytics through the dashboard.
+
+Step 5: Export Candidate Lists
+
+Generate Excel spreadsheets containing shortlisted candidate information for sharing with stakeholders or further processing.
+
+---
+
+# Database Design
+
+The application utilizes SQLite with the following relational schema:
+
+**candidates**: Core candidate information (ID, name, contact details, experience, education)
+
+**job_postings**: Job listing details (ID, title, description, requirements)
+
+**candidate_skills**: Junction table linking candidates to their skills
+
+**job_skills**: Junction table defining required skills for each position
+
+---
+
+# Core Components
+### Model Classes
+
+**Candidate**: Represents candidate entities with all associated attributes
+
+**JobPosting**: Encapsulates job opening details and requirements
+
+**MatchResult**: Stores matching scores and compatibility metrics
+
+### Parsing Layer
+
+**ResumeParser**: Abstract interface defining parsing contract
+
+PDFParser, DOCXParser, TextParser: Format-specific parser implementations
+
+### Business Logic
+
+**MatchingEngine**: Implements the intelligent matching algorithm with weighted scoring
+
+**DatabaseManager**: Central database access layer
+
+CandidateDAO, JobPostingDAO: Data access objects for CRUD operations
+
+### Presentation Layer
+
+**RecruiterDashboard**: Main JavaFX application window
+
+**MainApplication**: Application entry point and initialization
+
+### Utilities
+
+**ExcelExporter**: Handles generation of Excel reports
+
+**RegexUtils**: Common regular expressions for data extraction
+
+---
+
+## Matching Algorithm Details
+
+The intelligent matching system evaluates candidates using multiple criteria:
+
+Skills Matching: Keyword-based analysis with weighted importance scores
+
+Experience Verification: Validates candidate experience against job requirements
+
+Education Assessment: Checks educational qualifications alignment
+
+Composite Scoring: Generates overall compatibility percentage (0–100%)
 
 ## Contributing
 
@@ -125,7 +196,3 @@ The matching engine uses:
 3. Make your changes
 4. Add tests if applicable
 5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License.
